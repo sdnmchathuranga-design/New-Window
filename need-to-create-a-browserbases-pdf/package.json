@@ -1,0 +1,35 @@
+{
+  "name": "mahesh-pdf-editor",
+  "version": "1.0.0",
+  "description": "Mahesh PDF Editor desktop app for Windows.",
+  "main": "electron/main.js",
+  "author": "Mahesh",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win portable"
+  },
+  "build": {
+    "appId": "com.mahesh.pdfeditor",
+    "productName": "Mahesh PDF Editor",
+    "artifactName": "Mahesh-PDF-Editor-${version}.${ext}",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**/*",
+      "website/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "portable"
+      ]
+    }
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  }
+}

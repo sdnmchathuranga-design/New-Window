@@ -1,0 +1,29 @@
+Mahesh PDF Editor - Windows App Scope
+
+This project is now packaged as a Windows desktop app with Electron.
+
+It is not an Adobe Acrobat clone and does not include Adobe's commercial PDF engine.
+
+Current desktop app features:
+- Open PDF files locally.
+- Preview PDF pages.
+- Add new text to pages.
+- Cover existing visible text with a white box.
+- Place replacement text over covered text.
+- Drag the text and cover box visually.
+- Merge PDFs.
+- Split page ranges.
+- Split each page into separate PDF downloads.
+
+Why it cannot edit exactly like Microsoft Word:
+PDF files do not store content as editable paragraphs. A page is usually made from positioned text fragments, embedded fonts, vector shapes, images, and drawing commands. Full editors like Adobe Acrobat use a commercial PDF engine, font substitution, OCR, and content-stream rewriting.
+
+Possible future upgrades:
+- Multiple text boxes per page.
+- Multiple erase boxes per page.
+- Image/signature insertion.
+- Highlight, underline, drawing tools.
+- Page thumbnails.
+- Rotate, delete, reorder pages.
+- OCR workflow for scanned PDFs.
+- PDF-to-DOCX conversion workflow.

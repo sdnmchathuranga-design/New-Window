@@ -1,0 +1,1306 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mahesh PDF Editor</title>
+    <meta name="description" content="Mahesh PDF Editor is a browser PDF tool for merging PDFs and splitting pages.">
+    <script src="vendor/pdf-lib.min.js"></script>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #182326;
+        --muted: #617175;
+        --paper: #ffffff;
+        --wash: #f4f8f6;
+        --line: #d8e3e0;
+        --accent: #0c7b64;
+        --accent-strong: #075f4e;
+        --blue: #2f6f8f;
+        --danger: #a9461c;
+        --shadow: 0 18px 46px rgba(25, 47, 45, 0.13);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--ink);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background:
+          linear-gradient(135deg, rgba(12, 123, 100, 0.13), transparent 36%),
+          linear-gradient(245deg, rgba(47, 111, 143, 0.13), transparent 34%),
+          var(--wash);
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      .shell {
+        width: min(1160px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 26px 0 34px;
+      }
+
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+        margin-bottom: 22px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .logo {
+        display: grid;
+        place-items: center;
+        width: 46px;
+        height: 46px;
+        border-radius: 8px;
+        background: var(--accent);
+        box-shadow: 0 12px 24px rgba(12, 123, 100, 0.2);
+      }
+
+      .logo svg {
+        width: 30px;
+        height: 30px;
+      }
+
+      .brand strong {
+        display: block;
+        font-size: 1.1rem;
+      }
+
+      .brand span,
+      .note {
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 0.9fr) minmax(320px, 1.1fr);
+        gap: 24px;
+        align-items: stretch;
+      }
+
+      .intro {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-height: 560px;
+      }
+
+      .eyebrow {
+        margin: 0 0 10px;
+        color: var(--accent-strong);
+        font-size: 0.78rem;
+        font-weight: 850;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        max-width: 560px;
+        margin: 0 0 18px;
+        font-size: clamp(2.4rem, 6vw, 5.6rem);
+        line-height: 0.95;
+        letter-spacing: 0;
+      }
+
+      .intro-copy {
+        max-width: 560px;
+        margin: 0 0 24px;
+        color: var(--muted);
+        font-size: 1.1rem;
+        line-height: 1.55;
+      }
+
+      .visual {
+        width: min(420px, 100%);
+        aspect-ratio: 1.15;
+        position: relative;
+        margin-top: 20px;
+      }
+
+      .sheet {
+        position: absolute;
+        width: 58%;
+        height: 76%;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--paper);
+        box-shadow: 0 18px 36px rgba(24, 35, 38, 0.12);
+      }
+
+      .sheet::before {
+        content: "";
+        position: absolute;
+        inset: 22px 22px auto;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--accent);
+        box-shadow: 0 22px 0 #cbd9d6, 0 44px 0 #cbd9d6, 0 66px 0 #cbd9d6;
+      }
+
+      .sheet.one {
+        left: 2%;
+        top: 14%;
+        transform: rotate(-7deg);
+      }
+
+      .sheet.two {
+        left: 22%;
+        top: 4%;
+        transform: rotate(3deg);
+      }
+
+      .sheet.three {
+        right: 0;
+        bottom: 0;
+        transform: rotate(8deg);
+      }
+
+      .tool {
+        min-height: 560px;
+        padding: 22px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.9);
+        box-shadow: var(--shadow);
+      }
+
+      .tabs {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        padding: 6px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #f8fbfa;
+      }
+
+      .tab {
+        min-height: 44px;
+        border: 0;
+        border-radius: 6px;
+        color: var(--muted);
+        background: transparent;
+        cursor: pointer;
+        font-weight: 850;
+      }
+
+      .tab.active {
+        color: #fff;
+        background: var(--accent);
+      }
+
+      .panel {
+        display: none;
+        padding-top: 22px;
+      }
+
+      .panel.active {
+        display: grid;
+        gap: 16px;
+      }
+
+      h2 {
+        margin: 0;
+        font-size: 1.45rem;
+        letter-spacing: 0;
+      }
+
+      .panel p {
+        margin: 4px 0 0;
+        color: var(--muted);
+      }
+
+      .drop {
+        display: grid;
+        place-items: center;
+        min-height: 180px;
+        padding: 22px;
+        border: 2px dashed #9dafb4;
+        border-radius: 8px;
+        background: #f9fbfa;
+        text-align: center;
+        cursor: pointer;
+      }
+
+      .drop:hover,
+      .drop.dragging {
+        border-color: var(--accent);
+        background: #edf8f4;
+      }
+
+      .drop input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+      }
+
+      .drop strong {
+        display: block;
+        margin-bottom: 6px;
+      }
+
+      .file-list,
+      .selected {
+        display: grid;
+        gap: 8px;
+      }
+
+      .file-row,
+      .selected-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+        min-height: 54px;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+      }
+
+      .file-list:empty,
+      .selected:empty {
+        display: none;
+      }
+
+      .file-name {
+        overflow-wrap: anywhere;
+        font-weight: 800;
+      }
+
+      .file-meta {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .mini-actions {
+        display: flex;
+        gap: 6px;
+      }
+
+      .icon-button {
+        width: 34px;
+        height: 34px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #f8faf9;
+        cursor: pointer;
+        font-weight: 900;
+      }
+
+      .icon-button:disabled {
+        color: #a7b3b6;
+        cursor: not-allowed;
+      }
+
+      .field {
+        display: grid;
+        gap: 7px;
+        color: var(--muted);
+        font-weight: 750;
+      }
+
+      .field input,
+      .field textarea {
+        min-height: 50px;
+        width: 100%;
+        padding: 0 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--ink);
+        background: #fff;
+      }
+
+      .field textarea {
+        min-height: 96px;
+        padding: 12px;
+        resize: vertical;
+      }
+
+      .edit-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .pdf-preview {
+        position: relative;
+        min-height: 260px;
+        max-height: 560px;
+        overflow: auto;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #e7eeeb;
+      }
+
+      .page-stage {
+        position: relative;
+        width: max-content;
+        min-width: 100%;
+        padding: 16px;
+      }
+
+      .page-stage canvas {
+        display: block;
+        background: white;
+        box-shadow: 0 10px 26px rgba(24, 35, 38, 0.16);
+      }
+
+      .text-overlay {
+        position: absolute;
+        left: 66px;
+        top: 66px;
+        min-width: 120px;
+        max-width: min(460px, calc(100% - 32px));
+        padding: 4px 6px;
+        border: 1px dashed var(--accent);
+        border-radius: 4px;
+        color: #0d1719;
+        background: rgba(255, 255, 255, 0.42);
+        cursor: move;
+        user-select: none;
+        white-space: pre-wrap;
+        line-height: 1.25;
+      }
+
+      .text-overlay:empty::before {
+        content: "Type text above";
+        color: #7d8a8d;
+      }
+
+      .cover-overlay {
+        position: absolute;
+        left: 66px;
+        top: 66px;
+        width: 220px;
+        height: 48px;
+        border: 1px dashed var(--danger);
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.86);
+        cursor: move;
+      }
+
+      .cover-overlay.hidden {
+        display: none;
+      }
+
+      .choice-group {
+        display: grid;
+        gap: 8px;
+      }
+
+      .choice-group label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 48px;
+        padding: 0 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        font-weight: 750;
+      }
+
+      .choice-group input {
+        accent-color: var(--accent);
+      }
+
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .primary,
+      .secondary {
+        min-height: 48px;
+        padding: 0 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 850;
+      }
+
+      .primary {
+        border: 0;
+        color: #fff;
+        background: var(--accent);
+      }
+
+      .primary:hover {
+        background: var(--accent-strong);
+      }
+
+      .primary:disabled {
+        background: #9dafb4;
+        cursor: not-allowed;
+      }
+
+      .secondary {
+        border: 1px solid var(--line);
+        color: var(--ink);
+        background: #fff;
+      }
+
+      .status {
+        min-height: 22px;
+        margin: 0;
+        color: var(--blue);
+        font-weight: 800;
+      }
+
+      .status.error {
+        color: var(--danger);
+      }
+
+      .desktop-note {
+        margin-top: 18px;
+        padding: 14px 16px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.76);
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      @media (max-width: 860px) {
+        .hero {
+          grid-template-columns: 1fr;
+        }
+
+        .intro {
+          min-height: auto;
+        }
+
+        .visual {
+          display: none;
+        }
+      }
+
+      @media (max-width: 620px) {
+        .shell {
+          width: min(100% - 20px, 1160px);
+          padding-top: 16px;
+        }
+
+        .topbar,
+        .actions,
+        .file-row,
+        .selected-row {
+          align-items: stretch;
+          grid-template-columns: 1fr;
+          flex-direction: column;
+        }
+
+        .note {
+          display: none;
+        }
+
+        .tool {
+          padding: 16px;
+        }
+
+        .primary,
+        .secondary {
+          width: 100%;
+        }
+
+        .edit-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .mini-actions {
+          justify-content: end;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="logo" aria-hidden="true">
+            <svg viewBox="0 0 32 32" role="img">
+              <path fill="#fff" d="M8 3h12l4 4v22H8z" />
+              <path fill="#d9f0ea" d="M20 3v6h6z" />
+              <path fill="#0c7b64" d="M11 14h12v2H11zm0 5h12v2H11zm0 5h8v2h-8z" />
+            </svg>
+          </div>
+          <div>
+            <strong>Mahesh PDF Editor</strong>
+            <span>Windows PDF editing workspace</span>
+          </div>
+        </div>
+        <div class="note">Your files are processed in this browser.</div>
+      </header>
+
+      <section class="hero">
+        <div class="intro">
+          <p class="eyebrow">Desktop PDF Editor</p>
+          <h1>Edit, merge, split, and mark up PDF files.</h1>
+          <p class="intro-copy">Open PDFs in a desktop-style workspace, cover or replace visible text, add new text, merge documents, and split pages.</p>
+          <div class="visual" aria-hidden="true">
+            <div class="sheet one"></div>
+            <div class="sheet two"></div>
+            <div class="sheet three"></div>
+          </div>
+        </div>
+
+        <section class="tool" aria-label="PDF tool">
+          <div class="tabs" role="tablist" aria-label="PDF operation">
+            <button class="tab active" type="button" data-mode="merge" role="tab" aria-selected="true">Merge PDFs</button>
+            <button class="tab" type="button" data-mode="split" role="tab" aria-selected="false">Split Pages</button>
+            <button class="tab" type="button" data-mode="edit" role="tab" aria-selected="false">Edit Text</button>
+          </div>
+
+          <section class="panel active" data-panel="merge">
+            <div>
+              <h2>Merge PDFs</h2>
+              <p>Choose two or more PDFs. Use the arrows to set the order.</p>
+            </div>
+
+            <label class="drop" id="mergeDrop">
+              <input id="mergeInput" type="file" accept="application/pdf,.pdf" multiple>
+              <span>
+                <strong>Choose PDF files</strong>
+                Drag files here or tap to browse.
+              </span>
+            </label>
+
+            <div class="file-list" id="mergeList" aria-live="polite"></div>
+
+            <div class="actions">
+              <button class="primary" id="mergeButton" type="button" disabled>Merge and Download</button>
+              <button class="secondary" id="clearMerge" type="button">Clear</button>
+              <p class="status" id="mergeStatus" role="status"></p>
+            </div>
+          </section>
+
+          <section class="panel" data-panel="split">
+            <div>
+              <h2>Split Pages</h2>
+              <p>Extract page ranges or export every page separately.</p>
+            </div>
+
+            <label class="drop" id="splitDrop">
+              <input id="splitInput" type="file" accept="application/pdf,.pdf">
+              <span>
+                <strong>Choose one PDF</strong>
+                Page ranges can look like 1-3, 5, 8-10.
+              </span>
+            </label>
+
+            <div class="selected" id="splitSelected" aria-live="polite"></div>
+
+            <label class="field">
+              <span>Pages to extract</span>
+              <input id="rangeInput" type="text" placeholder="Example: 1-3, 5, 8-10">
+            </label>
+
+            <div class="choice-group" aria-label="Split mode">
+              <label>
+                <input type="radio" name="splitMode" value="range" checked>
+                <span>Download selected pages as one PDF</span>
+              </label>
+              <label>
+                <input type="radio" name="splitMode" value="every">
+                <span>Download each page separately</span>
+              </label>
+            </div>
+
+            <div class="actions">
+              <button class="primary" id="splitButton" type="button" disabled>Split and Download</button>
+              <button class="secondary" id="clearSplit" type="button">Clear</button>
+              <p class="status" id="splitStatus" role="status"></p>
+            </div>
+          </section>
+
+          <section class="panel" data-panel="edit">
+            <div>
+              <h2>Edit Text</h2>
+              <p>Cover existing text, add replacement text, then download the edited copy.</p>
+            </div>
+
+            <label class="drop" id="editDrop">
+              <input id="editInput" type="file" accept="application/pdf,.pdf">
+              <span>
+                <strong>Choose one PDF</strong>
+                This edits visually by covering old text and adding replacement text.
+              </span>
+            </label>
+
+            <div class="selected" id="editSelected" aria-live="polite"></div>
+
+            <label class="field">
+              <span>Replacement text</span>
+              <textarea id="editText" placeholder="Leave empty if you only want to delete covered text"></textarea>
+            </label>
+
+            <div class="choice-group" aria-label="Text edit mode">
+              <label>
+                <input type="checkbox" id="coverExisting" checked>
+                <span>Cover existing text with a white box</span>
+              </label>
+            </div>
+
+            <div class="pdf-preview" id="editPreview">
+              <div class="page-stage" id="pageStage">
+                <canvas id="editCanvas"></canvas>
+                <div class="cover-overlay" id="coverOverlay" aria-label="Draggable cover box"></div>
+                <div class="text-overlay" id="textOverlay" aria-label="Draggable text overlay"></div>
+              </div>
+            </div>
+
+            <div class="edit-grid">
+              <label class="field">
+                <span>Page number</span>
+                <input id="editPage" type="number" min="1" value="1">
+              </label>
+              <label class="field">
+                <span>Font size</span>
+                <input id="editSize" type="number" min="6" max="120" value="18">
+              </label>
+              <label class="field">
+                <span>X position</span>
+                <input id="editX" type="number" min="0" value="50">
+              </label>
+              <label class="field">
+                <span>Y position from top</span>
+                <input id="editY" type="number" min="0" value="50">
+              </label>
+              <label class="field">
+                <span>Cover width</span>
+                <input id="coverWidth" type="number" min="10" value="220">
+              </label>
+              <label class="field">
+                <span>Cover height</span>
+                <input id="coverHeight" type="number" min="10" value="48">
+              </label>
+            </div>
+
+            <div class="actions">
+              <button class="primary" id="editButton" type="button" disabled>Apply Edit and Download</button>
+              <button class="secondary" id="clearEdit" type="button">Clear</button>
+              <p class="status" id="editStatus" role="status"></p>
+            </div>
+          </section>
+        </section>
+      </section>
+
+      <p class="desktop-note">
+        This Windows app edits PDFs visually. It can cover existing text and place replacement text, but it does not rewrite PDF paragraphs like Microsoft Word.
+      </p>
+    </main>
+
+    <script type="module">
+      import * as pdfjsLib from "./vendor/pdf.min.mjs";
+
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "./vendor/pdf.worker.min.mjs";
+
+      const state = {
+        mergeFiles: [],
+        splitFile: null,
+        splitPageCount: 0,
+        editFile: null,
+        editPageCount: 0,
+        editBytes: null,
+        editPdfJsDoc: null,
+        editRenderScale: 1,
+        editPageWidth: 0,
+        editPageHeight: 0,
+      };
+
+      const tabs = document.querySelectorAll(".tab");
+      const panels = document.querySelectorAll(".panel");
+      const mergeInput = document.querySelector("#mergeInput");
+      const mergeDrop = document.querySelector("#mergeDrop");
+      const mergeList = document.querySelector("#mergeList");
+      const mergeButton = document.querySelector("#mergeButton");
+      const mergeStatus = document.querySelector("#mergeStatus");
+      const splitInput = document.querySelector("#splitInput");
+      const splitDrop = document.querySelector("#splitDrop");
+      const splitSelected = document.querySelector("#splitSelected");
+      const splitButton = document.querySelector("#splitButton");
+      const splitStatus = document.querySelector("#splitStatus");
+      const rangeInput = document.querySelector("#rangeInput");
+      const editInput = document.querySelector("#editInput");
+      const editDrop = document.querySelector("#editDrop");
+      const editSelected = document.querySelector("#editSelected");
+      const editText = document.querySelector("#editText");
+      const editPage = document.querySelector("#editPage");
+      const editSize = document.querySelector("#editSize");
+      const editX = document.querySelector("#editX");
+      const editY = document.querySelector("#editY");
+      const coverExisting = document.querySelector("#coverExisting");
+      const coverWidth = document.querySelector("#coverWidth");
+      const coverHeight = document.querySelector("#coverHeight");
+      const editButton = document.querySelector("#editButton");
+      const editStatus = document.querySelector("#editStatus");
+      const editPreview = document.querySelector("#editPreview");
+      const editCanvas = document.querySelector("#editCanvas");
+      const pageStage = document.querySelector("#pageStage");
+      const coverOverlay = document.querySelector("#coverOverlay");
+      const textOverlay = document.querySelector("#textOverlay");
+
+      tabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          const mode = tab.dataset.mode;
+          tabs.forEach((item) => {
+            item.classList.toggle("active", item === tab);
+            item.setAttribute("aria-selected", String(item === tab));
+          });
+          panels.forEach((panel) => panel.classList.toggle("active", panel.dataset.panel === mode));
+        });
+      });
+
+      setupDropZone(mergeDrop, (files) => {
+        state.mergeFiles.push(...filterPdfFiles(files));
+        renderMergeFiles();
+      });
+
+      setupDropZone(splitDrop, async (files) => {
+        const [file] = filterPdfFiles(files);
+        if (file) await setSplitFile(file);
+      });
+
+      setupDropZone(editDrop, async (files) => {
+        const [file] = filterPdfFiles(files);
+        if (file) await setEditFile(file);
+      });
+
+      mergeInput.addEventListener("change", () => {
+        state.mergeFiles.push(...filterPdfFiles(mergeInput.files));
+        renderMergeFiles();
+      });
+
+      splitInput.addEventListener("change", async () => {
+        const [file] = filterPdfFiles(splitInput.files);
+        if (file) await setSplitFile(file);
+      });
+
+      editInput.addEventListener("change", async () => {
+        const [file] = filterPdfFiles(editInput.files);
+        if (file) await setEditFile(file);
+      });
+
+      document.querySelector("#clearMerge").addEventListener("click", () => {
+        state.mergeFiles = [];
+        mergeInput.value = "";
+        setStatus(mergeStatus, "");
+        renderMergeFiles();
+      });
+
+      document.querySelector("#clearSplit").addEventListener("click", () => {
+        state.splitFile = null;
+        state.splitPageCount = 0;
+        splitInput.value = "";
+        rangeInput.value = "";
+        setStatus(splitStatus, "");
+        renderSplitFile();
+      });
+
+      document.querySelector("#clearEdit").addEventListener("click", () => {
+        state.editFile = null;
+        state.editPageCount = 0;
+        editInput.value = "";
+        editText.value = "";
+        editPage.value = "1";
+        editSize.value = "18";
+        editX.value = "50";
+        editY.value = "50";
+        coverExisting.checked = true;
+        coverWidth.value = "220";
+        coverHeight.value = "48";
+        state.editBytes = null;
+        state.editPdfJsDoc = null;
+        editCanvas.getContext("2d").clearRect(0, 0, editCanvas.width, editCanvas.height);
+        coverOverlay.classList.remove("hidden");
+        textOverlay.textContent = "";
+        setStatus(editStatus, "");
+        renderEditFile();
+      });
+
+      document.querySelectorAll('input[name="splitMode"]').forEach((radio) => {
+        radio.addEventListener("change", updateSplitButton);
+      });
+
+      rangeInput.addEventListener("input", updateSplitButton);
+      [editText, editPage, editSize, editX, editY, coverExisting, coverWidth, coverHeight].forEach((input) => {
+        input.addEventListener("input", () => {
+          updateEditOverlays();
+          updateEditButton();
+        });
+      });
+      editPage.addEventListener("change", renderEditPage);
+      mergeButton.addEventListener("click", mergePdfs);
+      splitButton.addEventListener("click", splitPdf);
+      editButton.addEventListener("click", addTextToPdf);
+      setupOverlayDrag(textOverlay);
+      setupOverlayDrag(coverOverlay);
+
+      function setupDropZone(zone, onFiles) {
+        ["dragenter", "dragover"].forEach((eventName) => {
+          zone.addEventListener(eventName, (event) => {
+            event.preventDefault();
+            zone.classList.add("dragging");
+          });
+        });
+
+        ["dragleave", "drop"].forEach((eventName) => {
+          zone.addEventListener(eventName, (event) => {
+            event.preventDefault();
+            zone.classList.remove("dragging");
+          });
+        });
+
+        zone.addEventListener("drop", (event) => onFiles(event.dataTransfer.files));
+      }
+
+      function filterPdfFiles(fileList) {
+        return Array.from(fileList).filter((file) => {
+          return file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+        });
+      }
+
+      function renderMergeFiles() {
+        mergeList.innerHTML = "";
+        state.mergeFiles.forEach((file, index) => {
+          const row = document.createElement("div");
+          row.className = "file-row";
+          row.innerHTML = `
+            <div>
+              <div class="file-name">${escapeHtml(file.name)}</div>
+              <div class="file-meta">${formatBytes(file.size)}</div>
+            </div>
+            <div class="mini-actions">
+              <button class="icon-button" type="button" title="Move up" data-action="up" ${index === 0 ? "disabled" : ""}>↑</button>
+              <button class="icon-button" type="button" title="Move down" data-action="down" ${index === state.mergeFiles.length - 1 ? "disabled" : ""}>↓</button>
+              <button class="icon-button" type="button" title="Remove" data-action="remove">×</button>
+            </div>
+          `;
+          row.querySelectorAll("button").forEach((button) => {
+            button.addEventListener("click", () => updateMergeFile(index, button.dataset.action));
+          });
+          mergeList.appendChild(row);
+        });
+        mergeButton.disabled = state.mergeFiles.length < 2;
+      }
+
+      function updateMergeFile(index, action) {
+        if (action === "remove") state.mergeFiles.splice(index, 1);
+        if (action === "up" && index > 0) {
+          [state.mergeFiles[index - 1], state.mergeFiles[index]] = [state.mergeFiles[index], state.mergeFiles[index - 1]];
+        }
+        if (action === "down" && index < state.mergeFiles.length - 1) {
+          [state.mergeFiles[index], state.mergeFiles[index + 1]] = [state.mergeFiles[index + 1], state.mergeFiles[index]];
+        }
+        renderMergeFiles();
+      }
+
+      async function setSplitFile(file) {
+        if (!window.PDFLib) {
+          setStatus(splitStatus, "The PDF library could not load. Check your internet connection.", true);
+          return;
+        }
+
+        state.splitFile = file;
+        setStatus(splitStatus, "Reading page count...");
+        try {
+          const pdf = await PDFLib.PDFDocument.load(await file.arrayBuffer(), { ignoreEncryption: true });
+          state.splitPageCount = pdf.getPageCount();
+          setStatus(splitStatus, "");
+          renderSplitFile();
+        } catch (error) {
+          state.splitFile = null;
+          state.splitPageCount = 0;
+          renderSplitFile();
+          setStatus(splitStatus, "This PDF could not be read. Try an unlocked PDF file.", true);
+        }
+      }
+
+      function renderSplitFile() {
+        splitSelected.innerHTML = "";
+        if (state.splitFile) {
+          splitSelected.innerHTML = `
+            <div class="selected-row">
+              <div>
+                <div class="file-name">${escapeHtml(state.splitFile.name)}</div>
+                <div class="file-meta">${state.splitPageCount} pages · ${formatBytes(state.splitFile.size)}</div>
+              </div>
+              <button class="icon-button" type="button" title="Remove selected PDF">×</button>
+            </div>
+          `;
+          splitSelected.querySelector("button").addEventListener("click", () => {
+            state.splitFile = null;
+            state.splitPageCount = 0;
+            splitInput.value = "";
+            renderSplitFile();
+          });
+        }
+        updateSplitButton();
+      }
+
+      function updateSplitButton() {
+        const mode = getSplitMode();
+        splitButton.disabled = !state.splitFile || (mode === "range" && !rangeInput.value.trim());
+      }
+
+      async function setEditFile(file) {
+        if (!window.PDFLib) {
+          setStatus(editStatus, "The PDF library could not load. Keep the vendor folder next to this file.", true);
+          return;
+        }
+
+        state.editFile = file;
+        setStatus(editStatus, "Reading PDF...");
+        try {
+          state.editBytes = await file.arrayBuffer();
+          const pdf = await PDFLib.PDFDocument.load(state.editBytes.slice(0), { ignoreEncryption: true });
+          state.editPdfJsDoc = await pdfjsLib.getDocument({ data: state.editBytes.slice(0) }).promise;
+          state.editPageCount = pdf.getPageCount();
+          editPage.max = String(state.editPageCount);
+          editPage.value = "1";
+          editX.value = "50";
+          editY.value = "50";
+          coverWidth.value = "220";
+          coverHeight.value = "48";
+          setStatus(editStatus, "");
+          renderEditFile();
+          await renderEditPage();
+        } catch (error) {
+          state.editFile = null;
+          state.editPageCount = 0;
+          state.editBytes = null;
+          state.editPdfJsDoc = null;
+          renderEditFile();
+          setStatus(editStatus, "This PDF could not be read. Try an unlocked PDF file.", true);
+        }
+      }
+
+      function renderEditFile() {
+        editSelected.innerHTML = "";
+        if (state.editFile) {
+          editSelected.innerHTML = `
+            <div class="selected-row">
+              <div>
+                <div class="file-name">${escapeHtml(state.editFile.name)}</div>
+                <div class="file-meta">${state.editPageCount} pages - ${formatBytes(state.editFile.size)}</div>
+              </div>
+              <button class="icon-button" type="button" title="Remove selected PDF">x</button>
+            </div>
+          `;
+          editSelected.querySelector("button").addEventListener("click", () => {
+            state.editFile = null;
+            state.editPageCount = 0;
+            state.editBytes = null;
+            state.editPdfJsDoc = null;
+            editInput.value = "";
+            editCanvas.getContext("2d").clearRect(0, 0, editCanvas.width, editCanvas.height);
+            coverOverlay.classList.remove("hidden");
+            textOverlay.textContent = "";
+            renderEditFile();
+          });
+        }
+        updateEditButton();
+      }
+
+      function updateEditButton() {
+        editButton.disabled = !state.editFile || (!editText.value.trim() && !coverExisting.checked);
+      }
+
+      async function renderEditPage() {
+        if (!state.editPdfJsDoc) return;
+
+        const pageNumber = clampNumber(Number(editPage.value), 1, state.editPageCount || 1);
+        editPage.value = String(pageNumber);
+        setStatus(editStatus, "Rendering page...");
+
+        const page = await state.editPdfJsDoc.getPage(pageNumber);
+        const baseViewport = page.getViewport({ scale: 1 });
+        const availableWidth = Math.min(720, Math.max(320, editPreview.clientWidth - 42));
+        const scale = Math.min(1.5, Math.max(0.6, availableWidth / baseViewport.width));
+        const viewport = page.getViewport({ scale });
+        const context = editCanvas.getContext("2d");
+
+        state.editRenderScale = scale;
+        state.editPageWidth = baseViewport.width;
+        state.editPageHeight = baseViewport.height;
+        editCanvas.width = Math.floor(viewport.width);
+        editCanvas.height = Math.floor(viewport.height);
+        syncOverlayPosition();
+
+        await page.render({ canvasContext: context, viewport }).promise;
+        updateEditOverlays();
+        setStatus(editStatus, "");
+      }
+
+      function updateEditOverlays() {
+        textOverlay.textContent = editText.value;
+        textOverlay.style.fontSize = `${clampNumber(Number(editSize.value), 6, 120)}px`;
+        coverOverlay.classList.toggle("hidden", !coverExisting.checked);
+        coverOverlay.style.width = `${Math.max(10, Number(coverWidth.value) || 10)}px`;
+        coverOverlay.style.height = `${Math.max(10, Number(coverHeight.value) || 10)}px`;
+        syncOverlayPosition();
+      }
+
+      function syncOverlayPosition() {
+        const left = `${Math.max(0, Number(editX.value) || 0) + 16}px`;
+        const top = `${Math.max(0, Number(editY.value) || 0) + 16}px`;
+        textOverlay.style.left = left;
+        textOverlay.style.top = top;
+        coverOverlay.style.left = left;
+        coverOverlay.style.top = top;
+      }
+
+      function setupOverlayDrag(target) {
+        let dragging = false;
+        let startPointerX = 0;
+        let startPointerY = 0;
+        let startLeft = 0;
+        let startTop = 0;
+
+        target.addEventListener("pointerdown", (event) => {
+          if (!state.editFile) return;
+          dragging = true;
+          target.setPointerCapture(event.pointerId);
+          startPointerX = event.clientX;
+          startPointerY = event.clientY;
+          startLeft = Number.parseFloat(target.style.left) || 16;
+          startTop = Number.parseFloat(target.style.top) || 16;
+        });
+
+        target.addEventListener("pointermove", (event) => {
+          if (!dragging) return;
+          const left = Math.max(16, startLeft + event.clientX - startPointerX);
+          const top = Math.max(16, startTop + event.clientY - startPointerY);
+          editX.value = String(Math.round(left - 16));
+          editY.value = String(Math.round(top - 16));
+          syncOverlayPosition();
+        });
+
+        target.addEventListener("pointerup", () => {
+          dragging = false;
+        });
+
+        target.addEventListener("pointercancel", () => {
+          dragging = false;
+        });
+      }
+
+      async function mergePdfs() {
+        if (!window.PDFLib) {
+          setStatus(mergeStatus, "The PDF library could not load. Check your internet connection.", true);
+          return;
+        }
+
+        setBusy(mergeButton, true);
+        setStatus(mergeStatus, "Merging PDFs...");
+        try {
+          const merged = await PDFLib.PDFDocument.create();
+          for (const file of state.mergeFiles) {
+            const source = await PDFLib.PDFDocument.load(await file.arrayBuffer(), { ignoreEncryption: true });
+            const pages = await merged.copyPages(source, source.getPageIndices());
+            pages.forEach((page) => merged.addPage(page));
+          }
+          downloadBlob(await merged.save(), "merged.pdf", "application/pdf");
+          setStatus(mergeStatus, "Merged PDF downloaded.");
+        } catch (error) {
+          setStatus(mergeStatus, "Could not merge these PDFs. Try unlocked PDF files.", true);
+        } finally {
+          setBusy(mergeButton, false);
+        }
+      }
+
+      async function splitPdf() {
+        if (!window.PDFLib) {
+          setStatus(splitStatus, "The PDF library could not load. Check your internet connection.", true);
+          return;
+        }
+
+        setBusy(splitButton, true);
+        setStatus(splitStatus, "Preparing download...");
+        try {
+        const source = await PDFLib.PDFDocument.load(await state.splitFile.arrayBuffer(), { ignoreEncryption: true });
+          if (getSplitMode() === "every") {
+            for (let pageIndex = 0; pageIndex < source.getPageCount(); pageIndex += 1) {
+              const single = await PDFLib.PDFDocument.create();
+              const [page] = await single.copyPages(source, [pageIndex]);
+              single.addPage(page);
+              downloadBlob(await single.save(), `page-${pageIndex + 1}.pdf`, "application/pdf");
+            }
+            setStatus(splitStatus, "Pages downloaded separately.");
+            return;
+          }
+
+          const pageIndexes = parsePageRanges(rangeInput.value, source.getPageCount());
+          const extracted = await PDFLib.PDFDocument.create();
+          const pages = await extracted.copyPages(source, pageIndexes);
+          pages.forEach((page) => extracted.addPage(page));
+          downloadBlob(await extracted.save(), "selected-pages.pdf", "application/pdf");
+          setStatus(splitStatus, "Selected pages downloaded.");
+        } catch (error) {
+          setStatus(splitStatus, error.message || "Could not split this PDF.", true);
+        } finally {
+          setBusy(splitButton, false);
+        }
+      }
+
+      async function addTextToPdf() {
+        if (!window.PDFLib) {
+          setStatus(editStatus, "The PDF library could not load. Keep the vendor folder next to this file.", true);
+          return;
+        }
+
+        setBusy(editButton, true);
+        setStatus(editStatus, "Adding text...");
+        try {
+          const pdf = await PDFLib.PDFDocument.load(await state.editFile.arrayBuffer(), { ignoreEncryption: true });
+          const pageNumber = Number(editPage.value);
+          const fontSize = Number(editSize.value);
+          const previewX = Number(editX.value);
+          const previewY = Number(editY.value);
+
+          if (!Number.isInteger(pageNumber) || pageNumber < 1 || pageNumber > pdf.getPageCount()) {
+            throw new Error(`Page number must be between 1 and ${pdf.getPageCount()}.`);
+          }
+          if (!Number.isFinite(fontSize) || fontSize < 6 || fontSize > 120) {
+            throw new Error("Font size must be between 6 and 120.");
+          }
+          if (!Number.isFinite(previewX) || !Number.isFinite(previewY) || previewX < 0 || previewY < 0) {
+            throw new Error("X and Y positions must be positive numbers.");
+          }
+
+          const page = pdf.getPage(pageNumber - 1);
+          const font = await pdf.embedFont(PDFLib.StandardFonts.Helvetica);
+          const lineHeight = fontSize * 1.25;
+          const x = previewX / state.editRenderScale;
+          const y = state.editPageHeight - (previewY / state.editRenderScale) - fontSize;
+
+          if (coverExisting.checked) {
+            page.drawRectangle({
+              x,
+              y: state.editPageHeight - (previewY / state.editRenderScale) - (Number(coverHeight.value) / state.editRenderScale),
+              width: Math.max(10, Number(coverWidth.value) || 10) / state.editRenderScale,
+              height: Math.max(10, Number(coverHeight.value) || 10) / state.editRenderScale,
+              color: PDFLib.rgb(1, 1, 1),
+              borderColor: PDFLib.rgb(1, 1, 1),
+              borderWidth: 0,
+            });
+          }
+
+          if (editText.value.trim()) {
+            editText.value.split("\n").forEach((line, index) => {
+              page.drawText(line || " ", {
+                x,
+                y: y - index * lineHeight,
+                size: fontSize,
+                font,
+                color: PDFLib.rgb(0.05, 0.09, 0.1),
+              });
+            });
+          }
+
+          downloadBlob(await pdf.save(), "edited-with-text.pdf", "application/pdf");
+          setStatus(editStatus, "Edited PDF downloaded.");
+        } catch (error) {
+          setStatus(editStatus, error.message || "Could not add text to this PDF.", true);
+        } finally {
+          setBusy(editButton, false);
+          updateEditButton();
+        }
+      }
+
+      function parsePageRanges(value, pageCount) {
+        const selected = [];
+        const seen = new Set();
+        const chunks = value.split(",").map((chunk) => chunk.trim()).filter(Boolean);
+        if (!chunks.length) throw new Error("Enter at least one page range.");
+
+        chunks.forEach((chunk) => {
+          const match = chunk.match(/^(\d+)(?:-(\d+))?$/);
+          if (!match) throw new Error(`"${chunk}" is not a valid page range.`);
+          const start = Number(match[1]);
+          const end = Number(match[2] || match[1]);
+          if (start < 1 || end < 1 || start > pageCount || end > pageCount || start > end) {
+            throw new Error(`"${chunk}" is outside this PDF's ${pageCount} pages.`);
+          }
+          for (let page = start; page <= end; page += 1) {
+            const index = page - 1;
+            if (!seen.has(index)) {
+              selected.push(index);
+              seen.add(index);
+            }
+          }
+        });
+        return selected;
+      }
+
+      function getSplitMode() {
+        return document.querySelector('input[name="splitMode"]:checked').value;
+      }
+
+      function clampNumber(value, min, max) {
+        if (!Number.isFinite(value)) return min;
+        return Math.min(max, Math.max(min, Math.round(value)));
+      }
+
+      function setBusy(button, isBusy) {
+        button.disabled = isBusy;
+        button.dataset.originalText ||= button.textContent;
+        button.textContent = isBusy ? "Working..." : button.dataset.originalText;
+      }
+
+      function setStatus(element, message, isError = false) {
+        element.textContent = message;
+        element.classList.toggle("error", isError);
+      }
+
+      function downloadBlob(data, filename, type) {
+        const blob = data instanceof Blob ? data : new Blob([data], { type });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+
+      function formatBytes(bytes) {
+        if (!bytes) return "0 B";
+        const units = ["B", "KB", "MB", "GB"];
+        const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+        return `${(bytes / 1024 ** index).toFixed(index ? 1 : 0)} ${units[index]}`;
+      }
+
+      function escapeHtml(value) {
+        return value.replace(/[&<>"']/g, (char) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#039;",
+        }[char]));
+      }
+    </script>
+  </body>
+</html>

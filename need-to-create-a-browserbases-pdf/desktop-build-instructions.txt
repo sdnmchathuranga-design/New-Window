@@ -1,0 +1,31 @@
+Mahesh PDF Editor - Windows EXE Build
+
+This builds the Windows desktop version of Mahesh PDF Editor.
+It is an Acrobat-style visual PDF editor, not a full Adobe Acrobat clone.
+
+Online build with GitHub:
+
+1. Upload this whole project to GitHub.
+2. Make sure these files are visible at the top level:
+   - package.json
+   - electron/main.js
+   - website/index.html
+   - website/vendor
+   - .github/workflows/windows-exe.yml
+3. Open the GitHub repository.
+4. Click Actions.
+5. Click Build Windows EXE.
+6. Click Run workflow.
+7. Wait for the build to finish.
+8. Download the artifact named:
+   mahesh-pdf-editor-windows-exe
+
+Inside it you will find:
+Mahesh-PDF-Editor-1.0.0.exe
+
+Local build, only if Node.js is installed:
+
+npm install
+npm run build:win
+
+The EXE will be created in the dist folder.
