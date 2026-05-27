@@ -1,0 +1,47 @@
+name: Build Windows EXE
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Find app folder
+        shell: pwsh
+        run: |
+          $package = Get-ChildItem -Path . -Filter package.json -Recurse |
+            Where-Object { $_.FullName -notmatch "\\node_modules\\" } |
+            Select-Object -First 1
+
+          if (-not $package) {
+            Write-Error "package.json was not found. Upload package.json, electron folder, and website folder."
+            exit 1
+          }
+
+          $appDir = $package.Directory.FullName
+          "APP_DIR=$appDir" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "Using app folder: $appDir"
+
+      - name: Install desktop dependencies
+        working-directory: ${{ env.APP_DIR }}
+        run: npm install
+
+      - name: Build Windows executable
+        working-directory: ${{ env.APP_DIR }}
+        run: npm run build:win
+
+      - name: Upload EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: mahesh-pdf-editor-windows-exe
+          path: ${{ env.APP_DIR }}/dist/*.exe
